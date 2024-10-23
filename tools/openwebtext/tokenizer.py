@@ -14,10 +14,11 @@
 # limitations under the License.
 
 import sys
-sys.path.append('..')
+# sys.path.append('..')
+print(sys.path)
+sys.path.append('/global/homes/k/klhhhhh/Megatron-modular-training')
 
-from megatron.data_utils.tokenization_gpt2 import GPT2Tokenizer
-
+from megatron.training.tokenizer.gpt2_tokenization import GPT2Tokenizer
 
 class Tokenizer:
 
