@@ -1,4 +1,5 @@
-import logging
+# Copyright (c) 2022, NVIDIA CORPORATION. All rights reserved.
+
 import ftfy
 import json
 from langdetect import detect
@@ -6,88 +7,128 @@ import numpy as np
 import time
 import os
 import sys
-from multiprocessing import Pool, cpu_count, current_process
+from multiprocessing import Pool, cpu_count, Manager
 from tokenizer import Tokenizer
 
 MIN_DOCUMENT_LENGHT = 128
 
-logging.basicConfig(filename='/pscratch/sd/k/klhhhhh/openwebtext_data/output.log', level=logging.INFO, 
-                    format='%(asctime)s - %(processName)s - %(levelname)s - %(message)s')
+def print_progress(prefix, start_time, num_docs, num_fixed_text,
+                   num_non_english_docs, chars_non_english_docs,
+                   num_small_docs, chars_small_docs):
 
-def process_line(line):
+    string = prefix + ' | '
+    string += 'elapsed time: {:.2f} | '.format(time.time() - start_time)
+    string += 'documents: {} | '.format(num_docs)
+    string += 'fixed text: {} | '.format(num_fixed_text)
+    string += 'non-english: {} | '.format(num_non_english_docs)
+    string += 'non-english chars: {} | '.format(chars_non_english_docs)
+    string += 'small docs: {} | '.format(num_small_docs)
+    string += 'small docs chars: {}'.format(chars_small_docs)
+    print(string, flush=True)
+
+
+def process_line(line, tokenizer):
+    """处理每一行文档的函数，将结果返回给主进程"""
     try:
-        # 
-        process_name = current_process().name
-        pid = os.getpid()
-
-        # 
         myjson = json.loads(line)
+        # 修复文本
         text = ftfy.fix_text(myjson['text'])
+        is_fixed = text != myjson['text']
+        myjson['text'] = text
+
+        # 语言检测
         if detect(text) != 'en':
-            logging.info(f"Process {process_name} (PID: {pid}) Skipping non-English document")
-            return None, None, None  # Skip non-English documents
+            return None, len(text), 'non_english', is_fixed
 
         # 检查文档长度
         if len(text) < (8 * MIN_DOCUMENT_LENGHT):
-            tokenizer = Tokenizer(cache_dir='./cache')
             tokens = tokenizer.tokenize_document(text)
             if len(tokens) < MIN_DOCUMENT_LENGHT:
-                logging.info(f"Process {process_name} (PID: {pid}) Skipping small document")
-                return None, None, None  # Skip small documents
+                return None, len(text), 'small', is_fixed
 
-        myjson['text'] = text
-        logging.info(f"Process {process_name} (PID: {pid}) Processed document successfully")
-        return json.dumps(myjson, ensure_ascii=False), len(text), 'valid'
+        # 返回处理过的文档
+        myjson = json.dumps(myjson, ensure_ascii=False)
+        return myjson, len(text), 'valid', is_fixed
+
     except Exception as e:
-        logging.error(f"Process {process_name} (PID: {pid}) Error processing line: {e}")
-        return None, None, 'error'
+        return None, 0, 'error', False
 
-def filter_corpus_parallel(filename, out_filename, num_workers=None):
+
+def filter_corpus_parallel(filename, out_filename, print_interval=10000, num_workers=1):
     if num_workers is None:
-        num_workers = cpu_count()  # Use all available CPU cores
+        num_workers = cpu_count()
 
-    logging.info(f'Starting parallel processing with {num_workers} workers.')
+    print(f'Starting parallel processing with {num_workers} workers.')
 
-    num_docs = 0
-    num_written_docs = 0
-    num_small_docs = 0
-    num_fixed_text = 0
-    num_non_english_docs = 0
-    chars_non_english_docs = 0
-    chars_small_docs = 0
+    tokenizer = Tokenizer(cache_dir='./cache')
+
+    manager = Manager()
+    num_docs = manager.Value('i', 0)
+    num_written_docs = manager.Value('i', 0)
+    num_small_docs = manager.Value('i', 0)
+    num_fixed_text = manager.Value('i', 0)
+    num_non_english_docs = manager.Value('i', 0)
+    chars_non_english_docs = manager.Value('i', 0)
+    chars_small_docs = manager.Value('i', 0)
+
     start_time = time.time()
 
-    with open(out_filename, 'wb') as f:
-        with open(filename, 'r') as fin:
-            pool = Pool(num_workers)
-            results = pool.imap(process_line, fin)
+    def update_progress(result):
+        doc, length, status, is_fixed = result
+        with num_docs.get_lock():
+            num_docs.value += 1
 
-            for result, length, status in results:
-                num_docs += 1
-                if status == 'valid':
-                    f.write(result.encode('utf-8'))
-                    f.write('\n'.encode('utf-8'))
-                    num_written_docs += 1
-                elif status == 'small':
-                    num_small_docs += 1
-                    chars_small_docs += length
-                elif status == 'non-english':
-                    num_non_english_docs += 1
-                    chars_non_english_docs += length
+        if is_fixed:
+            with num_fixed_text.get_lock():
+                num_fixed_text.value += 1
 
-                if num_docs % 10000 == 0:
-                    logging.info(f'[PROGRESS] {num_docs} documents processed.')
+        if status == 'valid':
+            with num_written_docs.get_lock():
+                num_written_docs.value += 1
+            return doc
+        elif status == 'small':
+            with num_small_docs.get_lock():
+                num_small_docs.value += 1
+            with chars_small_docs.get_lock():
+                chars_small_docs.value += length
+        elif status == 'non_english':
+            with num_non_english_docs.get_lock():
+                num_non_english_docs.value += 1
+            with chars_non_english_docs.get_lock():
+                chars_non_english_docs.value += length
 
-    logging.info(f'[FINAL] {num_docs} documents processed.')
+        if num_docs.value % print_interval == 0:
+            print_progress('[PROGRESS]', start_time, num_docs.value,
+                           num_fixed_text.value, num_non_english_docs.value,
+                           chars_non_english_docs.value, num_small_docs.value, chars_small_docs.value)
+        return None
+
+    with open(out_filename, 'wb') as f_out, open(filename, 'r') as f_in:
+        pool = Pool(processes=num_workers)
+
+        results = pool.imap(lambda line: process_line(line, tokenizer), f_in)
+        for result in results:
+            processed_doc = update_progress(result)
+            if processed_doc:
+                f_out.write(processed_doc.encode('utf-8'))
+                f_out.write('\n'.encode('utf-8'))
+
+        pool.close()
+        pool.join()
+
+    print_progress('[FINAL]', start_time, num_docs.value,
+                   num_fixed_text.value, num_non_english_docs.value,
+                   chars_non_english_docs.value, num_small_docs.value, chars_small_docs.value)
 
 
 if __name__ == '__main__':
-    print('building gpt2 dataset ...')
+
+    print('Building GPT-2 dataset...')
 
     input_filename = sys.argv[1]
     output_filename = sys.argv[2]
 
-    logging.info(f'will be reading {input_filename}')
-    logging.info(f'and will write the results to {output_filename}')
+    print(f'Will be reading {input_filename}')
+    print(f'And will write the results to {output_filename}')
 
-    filter_corpus_parallel(input_filename, output_filename, 12)
+    filter_corpus_parallel(input_filename, output_filename)
