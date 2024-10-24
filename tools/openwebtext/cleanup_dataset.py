@@ -99,4 +99,3 @@ if __name__ == '__main__':
 
     filter_corpus(input_filename, output_filename)
 
-
