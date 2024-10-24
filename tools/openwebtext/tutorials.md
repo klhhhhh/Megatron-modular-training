@@ -23,3 +23,9 @@ You need to specify your downloading datasets path, and the destination path.
     python merge_txt_to_json.py --data_path /path/to/txt/data --output_file /output/file/path
 ```
 
+# Clean data.
+
+```
+    python cleanup_dataset_parallel.py /path/to/merged_output.json /path/to/self-define/cleaned_up.json | tee /path/to/output_file
+```
+
