@@ -98,4 +98,3 @@ if __name__ == '__main__':
     print('and will write the results to {}'.format(output_filename))
 
     filter_corpus(input_filename, output_filename)
-

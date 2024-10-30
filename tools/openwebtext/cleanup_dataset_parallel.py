@@ -39,12 +39,16 @@ def process_lines(start_line, end_line, filename, process_id, tokenizer_cache, o
 
     with open(output_filename, 'w', encoding='utf-8') as f_out:
         with open(filename, 'r', encoding='utf-8') as f_in:
+            counter = 0
             for i, line in enumerate(f_in):
                 if i < start_line:
                     continue  # 跳过未到达的行
                 if i >= end_line:
                     break  # 已超出需要处理的行
                 try:
+                    counter += 1
+                    if counter%3000 == 0:
+                        print(f"process {process_id} dealt with {counter} lines.")
                     myjson = json.loads(line)
                     # Fix text
                     text = ftfy.fix_text(myjson['text'])
@@ -67,7 +71,8 @@ def process_lines(start_line, end_line, filename, process_id, tokenizer_cache, o
                     f_out.write(myjson_str + '\n')  # 每个结果写入文件
                     num_written_docs += 1
                 except Exception as e:
-                    print('    skipping ', e)
+                    # print('    skipping ', e)
+                    pass
 
     print(f"Process {process_id} finished: {num_written_docs} documents written.")
 
@@ -86,7 +91,7 @@ def get_file_line_count(filename):
     with open(filename, 'r', encoding='utf-8') as f:
         return sum(1 for _ in f)
 
-def filter_corpus_parallel(filename, out_filename, num_workers=12, print_interval=10000):
+def filter_corpus_parallel(filename, out_filename, num_workers=32, print_interval=10000):
 
     print(f' > filtering {filename} using {num_workers} workers')
 
@@ -138,15 +143,16 @@ def filter_corpus_parallel(filename, out_filename, num_workers=12, print_interva
         num_small_docs += result['num_small_docs']
         chars_small_docs += result['chars_small_docs']
 
-    # 汇总所有子进程的文件
-    with open(out_filename, 'wb') as output_file:
-        for temp_file in temp_files:
-            with open(temp_file, 'rb') as f:
-                output_file.write(f.read())
-            os.remove(temp_file)  # 汇总后删除临时文件
-
     print_progress('[FINAL]', start_time, num_written_docs, num_fixed_text, num_non_english_docs,
                    chars_non_english_docs, num_small_docs, chars_small_docs)
+
+    # # 汇总所有子进程的文件
+    # with open(out_filename, 'wb') as output_file:
+    #     for temp_file in temp_files:
+    #         with open(temp_file, 'rb') as f:
+    #             output_file.write(f.read())
+    #         os.remove(temp_file)  # 汇总后删除临时文件
+
 
 if __name__ == '__main__':
 
@@ -158,4 +164,4 @@ if __name__ == '__main__':
     print(f'will be reading {input_filename}')
     print(f'and will write the results to {output_filename}')
 
-    filter_corpus_parallel(input_filename, output_filename, num_workers=12)
+    filter_corpus_parallel(input_filename, output_filename, num_workers=32)
