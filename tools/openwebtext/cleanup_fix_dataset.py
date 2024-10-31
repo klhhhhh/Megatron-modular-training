@@ -23,7 +23,12 @@ import time
 def process_doc(json_line, args):
 
     # Read the line.
-    document = json.loads(json_line)
+    try:
+        document = json.loads(json_line)
+        # 进一步处理代码...
+    except json.JSONDecodeError as e:
+        return None, None, None, True
+    # document = json.loads(json_line)
     text = document['text']
 
     output = {'remove_512': False, 'remove_256_javascript': False, \
@@ -104,6 +109,9 @@ def process_set(args, input_file, output_f_cleaned, output_f_filtered):
 
     # Process documents.
     for output, text, document, to_filter in processed_docs:
+        if not output:
+            continue
+
         num_docs += 1
 
         num_remove_512 += 1 if output['remove_512'] else 0
