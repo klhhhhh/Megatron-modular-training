@@ -102,7 +102,7 @@ def process_set(args, input_file, output_f_cleaned, output_f_filtered):
 
     # Setup multi-processing.
     num_workers = 40
-    fin = open(input_file, 'r', encoding='utf-8')
+    fin = open(input_file, 'r', encoding='utf-8', errors='ignore')
     pool = multiprocessing.Pool(num_workers)
     process_doc_partial = partial(process_doc, args=args)
     processed_docs = pool.imap(process_doc_partial, fin, 500)
