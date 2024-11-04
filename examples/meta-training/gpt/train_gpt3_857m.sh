@@ -10,11 +10,17 @@ NUM_NODES=1
 NODE_RANK=0
 WORLD_SIZE=$(($GPUS_PER_NODE*$NUM_NODES))
 
-CHECKPOINT_PATH=$1 #<Specify path>
-TENSORBOARD_LOGS_PATH=$2 #<Specify path>
-VOCAB_FILE=$3 #<Specify path to file>/gpt2-vocab.json
-MERGE_FILE=$4 #<Specify path to file>/gpt2-merges.txt
-DATA_PATH=$5 #<Specify path and file prefix>_text_document
+# CHECKPOINT_PATH=$1 #<Specify path>
+# TENSORBOARD_LOGS_PATH=$2 #<Specify path>
+# VOCAB_FILE=$3 #<Specify path to file>/gpt2-vocab.json
+# MERGE_FILE=$4 #<Specify path to file>/gpt2-merges.txt
+# DATA_PATH=$5 #<Specify path and file prefix>_text_document
+
+CHECKPOINT_PATH=/pscratch/sd/k/klhhhhh/Megatron/gpt/ckpt
+TENSORBOARD_LOGS_PATH=/pscratch/sd/k/klhhhhh/Megatron/gpt/tensorboard
+VOCAB_FILE=/pscratch/sd/k/klhhhhh/Megatron/gpt/cache/gpt2-vocab.json
+MERGE_FILE=/pscratch/sd/k/klhhhhh/Megatron/gpt/cache/gpt2-merges.txt
+DATA_PATH=/pscratch/sd/k/klhhhhh/wiki
 
 DISTRIBUTED_ARGS=(
     --nproc_per_node $GPUS_PER_NODE 
@@ -34,7 +40,7 @@ GPT_MODEL_ARGS=(
 TRAINING_ARGS=(
     --micro-batch-size 1 
     --global-batch-size 1536 
-    --rampup-batch-size 16 16 5859375 
+    # --rampup-batch-size 16 16 5859375 
     --train-iters 500000 
     --weight-decay 0.1 
     --adam-beta1 0.9 
