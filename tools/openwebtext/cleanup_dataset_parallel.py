@@ -146,13 +146,6 @@ def filter_corpus_parallel(filename, out_filename, num_workers=32, print_interva
     print_progress('[FINAL]', start_time, num_written_docs, num_fixed_text, num_non_english_docs,
                    chars_non_english_docs, num_small_docs, chars_small_docs)
 
-    # # 汇总所有子进程的文件
-    # with open(out_filename, 'wb') as output_file:
-    #     for temp_file in temp_files:
-    #         with open(temp_file, 'rb') as f:
-    #             output_file.write(f.read())
-    #         os.remove(temp_file)  # 汇总后删除临时文件
-
 
 if __name__ == '__main__':
 
