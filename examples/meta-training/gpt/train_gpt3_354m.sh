@@ -1,12 +1,4 @@
 #!/bin/bash
-#SBATCH -A CCR24047
-#SBATCH -p gh-dev
-#SBATCH -J gpt-training-lk
-#SBATCH -N 1 
-#SBATCH -n 1
-#SBATCH -t 02:00:00
-
-# Runs the "175B" parameter model
 
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 
@@ -18,11 +10,17 @@ NUM_NODES=1
 NODE_RANK=0
 WORLD_SIZE=$(($GPUS_PER_NODE*$NUM_NODES))
 
-CHECKPOINT_PATH=$1 #<Specify path>
-TENSORBOARD_LOGS_PATH=$2 #<Specify path>
-VOCAB_FILE=$3 #<Specify path to file>/gpt2-vocab.json
-MERGE_FILE=$4 #<Specify path to file>/gpt2-merges.txt
-DATA_PATH=$5 #<Specify path and file prefix>_text_document
+# CHECKPOINT_PATH=$1 #<Specify path>
+# TENSORBOARD_LOGS_PATH=$2 #<Specify path>
+# VOCAB_FILE=$3 #<Specify path to file>/gpt2-vocab.json
+# MERGE_FILE=$4 #<Specify path to file>/gpt2-merges.txt
+# DATA_PATH=$5 #<Specify path and file prefix>_text_document
+
+CHECKPOINT_PATH=/pscratch/sd/k/klhhhhh/Megatron/gpt/ckpt
+TENSORBOARD_LOGS_PATH=/pscratch/sd/k/klhhhhh/Megatron/gpt/tensorboard
+VOCAB_FILE=/pscratch/sd/k/klhhhhh/Megatron/gpt/cache/gpt2-vocab.json
+MERGE_FILE=/pscratch/sd/k/klhhhhh/Megatron/gpt/cache/gpt2-merges.txt
+DATA_PATH=/pscratch/sd/k/klhhhhh/wiki/my-gpt2-wiki_text_document
 
 DISTRIBUTED_ARGS=(
     --nproc_per_node $GPUS_PER_NODE 
@@ -32,17 +30,17 @@ DISTRIBUTED_ARGS=(
 )
 
 GPT_MODEL_ARGS=(
-    --num-layers 24 
-    --hidden-size 1024 
-    --num-attention-heads 16 
-    --seq-length 2048 
+    --num-layers 12 
+    --hidden-size 512 
+    --num-attention-heads 8 
+    --seq-length 1024 
     --max-position-embeddings 2048 
 )
 
 TRAINING_ARGS=(
     --micro-batch-size 1 
     --global-batch-size 1536 
-    --rampup-batch-size 16 16 5859375 
+    # --rampup-batch-size 16 16 5859375 
     --train-iters 500000 
     --weight-decay 0.1 
     --adam-beta1 0.9 
@@ -58,7 +56,7 @@ TRAINING_ARGS=(
 )
 
 MODEL_PARALLEL_ARGS=(
-	--tensor-model-parallel-size 1 
+	--tensor-model-parallel-size 1
 	--pipeline-model-parallel-size 1
 )
 

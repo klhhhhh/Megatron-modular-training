@@ -2,7 +2,7 @@
 
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 
-GPUS_PER_NODE=1
+GPUS_PER_NODE=2
 # Change for multinode config
 MASTER_ADDR=localhost
 MASTER_PORT=6000
@@ -20,7 +20,7 @@ CHECKPOINT_PATH=/pscratch/sd/k/klhhhhh/Megatron/gpt/ckpt
 TENSORBOARD_LOGS_PATH=/pscratch/sd/k/klhhhhh/Megatron/gpt/tensorboard
 VOCAB_FILE=/pscratch/sd/k/klhhhhh/Megatron/gpt/cache/gpt2-vocab.json
 MERGE_FILE=/pscratch/sd/k/klhhhhh/Megatron/gpt/cache/gpt2-merges.txt
-DATA_PATH=/pscratch/sd/k/klhhhhh/wiki
+DATA_PATH=/pscratch/sd/k/klhhhhh/wiki/my-gpt2-wiki_text_document
 
 DISTRIBUTED_ARGS=(
     --nproc_per_node $GPUS_PER_NODE 
@@ -56,7 +56,7 @@ TRAINING_ARGS=(
 )
 
 MODEL_PARALLEL_ARGS=(
-	--tensor-model-parallel-size 1 
+	--tensor-model-parallel-size 2
 	--pipeline-model-parallel-size 1
 )
 
