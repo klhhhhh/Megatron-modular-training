@@ -1,0 +1,11 @@
+python tools/checkpoint/convert.py \
+     --bf16 \
+     --model-type GPT \
+     --loader llama_mistral \
+     --saver mcore \
+     --target-tensor-parallel-size 1 \
+     --checkpoint-type hf
+     --load-dir /pscratch/sd/k/klhhhhh/Huggingface_model/Llama-3.1-8B \
+     --save-dir /pscratch/sd/k/klhhhhh/Megatron/huggingface \
+     --tokenizer-model meta-llama/Llama-3.1-8B \
+     --model-size llama3-8B \
