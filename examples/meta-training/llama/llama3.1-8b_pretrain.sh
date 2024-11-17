@@ -4,9 +4,9 @@ export CUDA_DEVICE_MAX_CONNECTIONS=1
 
 GPUS_PER_NODE=4
 # Change for multinode config
-MASTER_ADDR=localhost
+MASTER_ADDR=nid001212
 MASTER_PORT=6000
-NUM_NODES=2
+NUM_NODES=4
 NODE_RANK=0
 WORLD_SIZE=$(($GPUS_PER_NODE*$NUM_NODES))
 
@@ -30,6 +30,7 @@ DISTRIBUTED_ARGS=(
     --nnodes $NUM_NODES 
     --master_addr $MASTER_ADDR 
     --master_port $MASTER_PORT
+    --node_rank $NODE_RANK
 )
 
 GPT_MODEL_ARGS=(
@@ -77,8 +78,8 @@ TRAINING_ARGS=(
 )
 
 MODEL_PARALLEL_ARGS=(
-	--tensor-model-parallel-size 8
-	--pipeline-model-parallel-size 1
+	--tensor-model-parallel-size 4
+	--pipeline-model-parallel-size 4
 )
 
 DATA_ARGS=(
