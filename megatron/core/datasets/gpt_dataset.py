@@ -8,6 +8,7 @@ from typing import Dict, Optional, Tuple
 
 import numpy
 import torch
+import torch.distributed
 
 from megatron.core.datasets.blended_megatron_dataset_config import BlendedMegatronDatasetConfig
 from megatron.core.datasets.indexed_dataset import IndexedDataset
@@ -351,7 +352,8 @@ class GPTDataset(MegatronDataset):
 
         if not path_to_cache or (
             not cache_hit
-            and (not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0)
+            # and (not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0)
+            and (not torch.distributed.is_initialized() or os.environ.get("LOCAL_RANK", "0") == "0")
         ):
 
             log_single_rank(
@@ -478,7 +480,9 @@ class GPTDataset(MegatronDataset):
             )
             log_single_rank(logger, logging.INFO, f"> total number of epochs: {num_epochs}")
 
-            return document_index, sample_index, shuffle_index
+            # return document_index, sample_index, shuffle_index
+        
+        torch.distributed.barrier()
 
         log_single_rank(
             logger, logging.INFO, f"Load the {type(self).__name__} {self.index_split.name} indices"
