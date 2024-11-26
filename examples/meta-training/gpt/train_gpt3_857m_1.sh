@@ -1,13 +1,19 @@
 #!/bin/bash
 
+
+while [ ! -f "./hostfile" ]; do
+    echo "Waiting for ./hostfile to be available..."
+    sleep 1 
+done
+
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 
-GPUS_PER_NODE=1
+GPUS_PER_NODE=4
 # Change for multinode config
-MASTER_ADDR=localhost
+MASTER_ADDR=$(head -n 1 ./hostfile)
 MASTER_PORT=6000
-NUM_NODES=1
-NODE_RANK=0
+NUM_NODES=2
+NODE_RANK=1
 WORLD_SIZE=$(($GPUS_PER_NODE*$NUM_NODES))
 
 # CHECKPOINT_PATH=$1 #<Specify path>
@@ -27,19 +33,22 @@ DISTRIBUTED_ARGS=(
     --nnodes $NUM_NODES 
     --master_addr $MASTER_ADDR 
     --master_port $MASTER_PORT
+    --rdzv-id gpt3-857m
+    --rdzv-backend c10d
+    --rdzv-endpoint $MASTER_ADDR:$MASTER_PORT
 )
 
 GPT_MODEL_ARGS=(
-    --num-layers 12 
-    --hidden-size 512 
-    --num-attention-heads 8 
-    --seq-length 1024 
+    --num-layers 24 
+    --hidden-size 1024 
+    --num-attention-heads 16 
+    --seq-length 2048 
     --max-position-embeddings 2048 
 )
 
 TRAINING_ARGS=(
-    --micro-batch-size 1
-    --global-batch-size 1536 
+    --micro-batch-size 4
+    --global-batch-size 1024
     # --rampup-batch-size 16 16 5859375 
     --train-iters 500000 
     --weight-decay 0.1 
@@ -56,8 +65,8 @@ TRAINING_ARGS=(
 )
 
 MODEL_PARALLEL_ARGS=(
-	--tensor-model-parallel-size 1
-	--pipeline-model-parallel-size 1
+	--tensor-model-parallel-size 4
+	--pipeline-model-parallel-size 2
 )
 
 DATA_ARGS=(
@@ -68,7 +77,7 @@ DATA_ARGS=(
 )
 
 EVAL_AND_LOGGING_ARGS=(
-    --log-interval 100
+    --log-interval 1
     --save-interval 10000 
     --eval-interval 1000 
     --save $CHECKPOINT_PATH 
