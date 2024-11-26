@@ -11,5 +11,5 @@
 source /pscratch/sd/k/klhhhhh/envs/megatron/bin/activate
 module load cudatoolkit/12.4
 cd /global/homes/k/klhhhhh/Megatron-modular-training
-bash /global/homes/k/klhhhhh/Megatron-modular-training/examples/meta-training/llama/llama3.1-8b_pretrain.sh
+srun bash /global/homes/k/klhhhhh/Megatron-modular-training/examples/meta-training/llama/llama3.1-8b_pretrain.sh
 
