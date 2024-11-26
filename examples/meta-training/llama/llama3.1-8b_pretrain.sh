@@ -1,12 +1,14 @@
 #!/bin/bash
 
+srun hostname > hostfile
+
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 
 GPUS_PER_NODE=4
 # Change for multinode config
-MASTER_ADDR=nid001212
+MASTER_ADDR=$(head -n 1 ./hostfile)
 MASTER_PORT=6000
-NUM_NODES=4
+NUM_NODES=1
 NODE_RANK=0
 WORLD_SIZE=$(($GPUS_PER_NODE*$NUM_NODES))
 
@@ -31,6 +33,9 @@ DISTRIBUTED_ARGS=(
     --master_addr $MASTER_ADDR 
     --master_port $MASTER_PORT
     --node_rank $NODE_RANK
+    --rdzv-id llama3.1-8b
+    --rdzv-backend c10d
+    --rdzv-endpoint $MASTER_ADDR:$MASTER_PORT
 )
 
 GPT_MODEL_ARGS=(
@@ -39,7 +44,7 @@ GPT_MODEL_ARGS=(
     --tokenizer-type HuggingFaceTokenizer
     --tokenizer-model ${TOKENIZER_MODEL}
     --exit-on-missing-checkpoint
-    --use-checkpoint-args
+    # --use-checkpoint-args
     --no-load-optim
     --no-load-rng
     --untie-embeddings-and-output-weights
@@ -50,19 +55,22 @@ GPT_MODEL_ARGS=(
     --disable-bias-linear
     --transformer-impl transformer_engine
     --group-query-attention
+    --num-query-groups 8
     --attention-dropout 0.0
     --hidden-dropout 0.0
     --rotary-base 500000
     --rotary-percent 1.0
     --ffn-hidden-size 14336
     --num-attention-heads 32
+    --num-layers 32
+    --hidden-size 4096
     --swiglu
     --bf16
 )
 
 TRAINING_ARGS=(
     --micro-batch-size 1
-    --global-batch-size 1536 
+    --global-batch-size 512 
     # --rampup-batch-size 16 16 5859375 
     --train-iters 500000 
     --weight-decay 0.1 
@@ -79,7 +87,7 @@ TRAINING_ARGS=(
 
 MODEL_PARALLEL_ARGS=(
 	--tensor-model-parallel-size 4
-	--pipeline-model-parallel-size 4
+	--pipeline-model-parallel-size 1
 )
 
 DATA_ARGS=(
@@ -94,7 +102,7 @@ EVAL_AND_LOGGING_ARGS=(
     --save-interval 10000 
     --eval-interval 1000 
     --save $CHECKPOINT_PATH 
-    --load $CHECKPOINT_PATH 
+    # --load $CHECKPOINT_PATH 
     --eval-iters 10
     --tensorboard-dir $TENSORBOARD_LOGS_PATH 
 )

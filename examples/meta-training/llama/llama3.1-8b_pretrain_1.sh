@@ -1,10 +1,16 @@
 #!/bin/bash
 
+
+while [ ! -f "./hostfile" ]; do
+    echo "Waiting for ./hostfile to be available..."
+    sleep 1 
+done
+
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 
 GPUS_PER_NODE=4
 # Change for multinode config
-MASTER_ADDR=nid001117
+MASTER_ADDR=$(head -n 1 ./hostfile)
 MASTER_PORT=6000
 NUM_NODES=2
 NODE_RANK=1
@@ -33,7 +39,7 @@ DISTRIBUTED_ARGS=(
     --node_rank $NODE_RANK
     --rdzv-id llama3.1-8b
     --rdzv-backend c10d
-    --rdzv-endpoint nid001117:6000
+    --rdzv-endpoint $MASTER_ADDR:$MASTER_PORT
 )
 
 GPT_MODEL_ARGS=(
