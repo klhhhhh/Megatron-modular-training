@@ -29,4 +29,5 @@ https://github.com/NVIDIA/TransformerEngine/issues/918
 https://github.com/NVIDIA/TransformerEngine/issues/803
 https://github.com/NVIDIA/TransformerEngine/issues/459
 https://github.com/NVIDIA/TransformerEngine/issues/887
+https://github.com/alibaba/ChatLearn/issues/182
 https://github.com/NVIDIA/TransformerEngine/issues/1014
